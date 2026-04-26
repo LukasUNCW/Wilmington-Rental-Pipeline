@@ -2,7 +2,7 @@
 
 ETL pipeline built on Databricks that ingests live rental listings 
 from the RentCast API, transforms them through a medallion architecture, and uses the 
-Claude AI API to score and summarize each listing against our group preferences, 
+Claude AI API to score and summarize each listing against our group's preferences, 
 helping three college students find the best house to rent in Wilmington, NC.
 
 ---
