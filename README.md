@@ -70,7 +70,7 @@ table, monthly rent bar chart, and score distribution visualization.
 - **23 listings** scored 7/10 or above
 - **Top pick**: 3956 Echo Farms Blvd — 3bed/3bath for $1,749/month ($583/person)
 - Pipeline runs automatically every day at 7:30 AM EST
-- Email alerts sent daily at 8:00 AM EST for any listing scoring 9/10
+- Email alerts sent daily to all three of us at 8:00 AM EST for any listing scoring 9/10
 
 ---
 
