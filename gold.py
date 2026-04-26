@@ -1,17 +1,14 @@
-# Databricks notebook source
 DATABASE_NAME = "rental_pipeline"
 RENTCAST_API_KEY = "your-rentcast-api-key-here"
 ANTHROPIC_API_KEY = "your-anthropic-api-key-here"
 spark.sql(f"USE {DATABASE_NAME}")
 print("Ready.")
 
-# COMMAND ----------
-
 import requests
 import json
 import re
 
-# Your group's preferences — edit these to match what you're actually looking for
+# prefs
 PREFERENCES = """
 - Budget: max $1,000/month per person, 3 people splitting rent = max $3,000/month total
 - Bedrooms: at least 3
@@ -71,8 +68,6 @@ Respond in this exact JSON format with no other text:
 
 print("Scoring function defined.")
 
-# COMMAND ----------
-
 df_silver = spark.table("rental_pipeline.silver_listings")
 sample = df_silver.limit(1).toPandas().iloc[0]
 
@@ -80,18 +75,16 @@ print(f"Testing on: {sample['address']}")
 result = score_listing(sample)
 print(json.dumps(result, indent=2))
 
-# COMMAND ----------
-
 import pandas as pd
 from pyspark.sql.functions import col
 
-# Load all silver listings
+# load silver listings
 df_silver = spark.table("rental_pipeline.silver_listings")
 listings_pd = df_silver.toPandas()
 
 print(f"Scoring {len(listings_pd)} listings...")
 
-# Score each listing
+# score each listing
 results = []
 for i, row in listings_pd.iterrows():
     try:
@@ -110,25 +103,23 @@ for i, row in listings_pd.iterrows():
 
 print(f"\nDone. Scored {len(results)} listings.")
 
-# COMMAND ----------
-
 import pandas as pd
 from pyspark.sql.functions import col
 
-# Clean up per_person_rent — strip $ and convert to integer
+# clean up per_person_rent
 results_clean = []
 for r in results:
     r["per_person_rent"] = int(str(r["per_person_rent"]).replace("$", "").replace(",", "").strip())
     r["score"] = int(r["score"])
     results_clean.append(r)
 
-# Convert to Spark DataFrame
+#cConvert to Spark DataFrame
 df_scores = spark.createDataFrame(pd.DataFrame(results_clean))
 
-# Join scores back to silver listings
+# join scores back to silver listings
 df_gold = df_silver.join(df_scores, on="listing_id", how="inner")
 
-# Write Gold table sorted by score descending
+# write Gold table sorted by score descending
 df_gold.orderBy(col("score").desc()) \
     .write \
     .format("delta") \
