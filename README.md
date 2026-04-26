@@ -78,7 +78,7 @@ table, monthly rent bar chart, and score distribution visualization.
 ### Prerequisites
 - Databricks account (Community Edition works)
 - RentCast API key — [sign up free](https://rentcast.io/api)
-- Anthropic API key — [sign up here](https://console.anthropic.com)
+- Anthropic API key — [sign up here](https://console.anthropic.com) (may require the purchasing of Anthropic credits)
 
 ### Steps
 1. Clone this repo into your Databricks Workspace
