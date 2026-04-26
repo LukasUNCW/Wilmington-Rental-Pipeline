@@ -12,6 +12,22 @@ helping three college students find the best house to rent in Wilmington, NC.
 Built on the **medallion architecture** pattern common in production data engineering 
 and mortgage/fintech data stacks.
 
+```mermaid
+flowchart LR
+    A[RentCast API] -->|raw JSON| B[(Bronze\nDelta Table)]
+    B -->|parse + clean| C[(Silver\nDelta Table)]
+    C -->|Claude AI scoring| D[(Gold\nDelta Table)]
+    D -->|top listings| E[Databricks\nDashboard]
+    D -->|score = 9| F[Email Alert]
+
+    style A fill:#4A90D9,color:#fff
+    style B fill:#CD7F32,color:#fff
+    style C fill:#708090,color:#fff
+    style D fill:#DAA520,color:#fff
+    style E fill:#4CAF50,color:#fff
+    style F fill:#9C27B0,color:#fff
+```
+
 ---
 
 ## Tech Stack
