@@ -32,10 +32,10 @@ and mortgage/fintech data stacks.
 
 | Notebook | Description |
 |---|---|
-| `00_config` | Project configuration and database setup |
-| `01_bronze_ingest` | Calls RentCast API, lands raw JSON into Delta |
-| `02_silver_transform` | Cleans, deduplicates, normalizes, adds Maps URLs |
-| `03_gold_score` | Batch scores listings via Claude API |
+| `config` | Project configuration and database setup |
+| `bronze` | Calls RentCast API, lands raw JSON into Delta |
+| `silver` | Cleans, deduplicates, normalizes, adds Maps URLs |
+| `gold` | Batch scores listings via Claude API |
 
 ---
 
