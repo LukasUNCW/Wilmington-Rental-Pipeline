@@ -1,14 +1,11 @@
-# Databricks notebook source
 DATABASE_NAME = "rental_pipeline"
 spark.sql(f"USE {DATABASE_NAME}")
 print("Ready.")
 
-# COMMAND ----------
-
 from pyspark.sql.functions import col, from_json, to_timestamp, when
 from pyspark.sql.types import *
 
-# Define the schema based on what RentCast returns
+# define the schema based on what RentCast returns
 listing_schema = StructType([
     StructField("id", StringType()),
     StructField("formattedAddress", StringType()),
@@ -30,7 +27,7 @@ listing_schema = StructType([
     StructField("daysOnMarket", IntegerType()),
 ])
 
-# Read from bronze and parse JSON
+# read from bronze and parse JSON
 df_bronze = spark.table("rental_pipeline.bronze_listings")
 
 df_parsed = df_bronze \
@@ -56,12 +53,10 @@ df_parsed = df_bronze \
 print(f"Parsed {df_parsed.count()} records")
 df_parsed.show(5, truncate=False)
 
-# COMMAND ----------
-
 from pyspark.sql.functions import row_number
 from pyspark.sql.window import Window
 
-# Deduplicate — keep the most recently ingested record per listing_id
+# deduplicate
 window = Window.partitionBy("listing_id").orderBy(col("ingested_at").desc())
 
 df_silver = df_parsed \
@@ -71,7 +66,7 @@ df_silver = df_parsed \
     .filter(col("monthly_rent").isNotNull()) \
     .filter(col("bedrooms").isNotNull())
 
-# Write to silver table
+# write to silver table
 df_silver.write \
     .format("delta") \
     .mode("overwrite") \
@@ -79,11 +74,9 @@ df_silver.write \
 
 print(f"Written {df_silver.count()} records to silver_listings")
 
-# COMMAND ----------
-
 from pyspark.sql.functions import concat, lit, regexp_replace, col
 
-# Add Google Maps URL to silver table
+# add Google Maps URL to silver table
 df_silver_with_links = spark.table("rental_pipeline.silver_listings")
 
 df_silver_with_links = df_silver_with_links.withColumn(
@@ -94,7 +87,7 @@ df_silver_with_links = df_silver_with_links.withColumn(
     )
 )
 
-# Overwrite silver table with the new column
+# overwrite silver table with the new column
 df_silver_with_links.write \
     .format("delta") \
     .mode("overwrite") \
