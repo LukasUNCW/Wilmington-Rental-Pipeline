@@ -2,7 +2,7 @@
 
 ETL pipeline built on Databricks that ingests live rental listings 
 from the RentCast API, transforms them through a medallion architecture, and uses the 
-Claude AI API to score and summarize each listing against a group's preferences, 
+Claude AI API to score and summarize each listing against our group preferences, 
 helping three college students find the best house to rent in Wilmington, NC.
 
 ---
@@ -43,7 +43,7 @@ and mortgage/fintech data stacks.
 
 ### Bronze Layer
 Raw JSON responses from the RentCast API are landed as-is into a Delta table with 
-an ingestion timestamp and source metadata. Append-only — nothing is ever modified 
+an ingestion timestamp and source metadata. Append-only, nothing is ever modified 
 or deleted at this layer.
 
 ### Silver Layer
@@ -52,8 +52,8 @@ etc.), deduplicated by listing ID, and enriched with a Google Maps URL for each
 property. Records with null prices or bedroom counts are filtered out.
 
 ### Gold Layer
-Each cleaned listing is passed to the Claude API with a structured prompt containing 
-the group's preferences (budget, bedroom count, property type, location). Claude 
+Each cleaned listing is passed to the Claude API with a structured prompt containing our
+group's preferences (budget, bedroom count, property type, location). Claude 
 returns a 1–10 score, per-person rent estimate, pros, cons, and a one-sentence 
 summary for each listing. Results are joined back to the silver data and written 
 as the final analytical asset.
@@ -86,7 +86,7 @@ table, monthly rent bar chart, and score distribution visualization.
 2. Open `config` and add your API keys
 3. Run notebooks in order: `config` → `bronze` → `silver` → `gold`
 4. Open the Databricks SQL Dashboard to view results
-5. Optionally enable the Databricks Job for daily scheduling
+5. (Optional) Enable the Databricks Job for daily scheduling
 
 ---
 
