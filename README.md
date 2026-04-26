@@ -1,6 +1,6 @@
 # Wilmington Rental Pipeline 
 
-A production-style ETL pipeline built on Databricks that ingests live rental listings 
+ETL pipeline built on Databricks that ingests live rental listings 
 from the RentCast API, transforms them through a medallion architecture, and uses the 
 Claude AI API to score and summarize each listing against a group's preferences, 
 helping three college students find the best house to rent in Wilmington, NC.
