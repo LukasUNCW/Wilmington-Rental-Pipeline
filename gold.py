@@ -13,12 +13,12 @@ import re
 
 # Your group's preferences — edit these to match what you're actually looking for
 PREFERENCES = """
-- Budget: max $1,500/month per person, 3 people splitting rent = max $4,500/month total
-- Bedrooms: at least 3, ideally 4
+- Budget: max $1,000/month per person, 3 people splitting rent = max $3,000/month total
+- Bedrooms: at least 3
 - Bathrooms: at least 2
 - Minimum square footage: 1,200 sqft
 - Property types: Single Family or Townhouse preferred, no studios
-- Location: prefer to be within reasonable distance of UNCW (Wilmington, NC)
+- Location: prefer to be within reasonable distance of UNCW (Wilmington, NC), say within 7 miles
 - Dealbreakers: price over $5,000/month, less than 2 bathrooms
 """
 
