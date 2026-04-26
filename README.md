@@ -82,8 +82,8 @@ table, monthly rent bar chart, and score distribution visualization.
 
 ### Steps
 1. Clone this repo into your Databricks Workspace
-2. Open `00_config` and add your API keys
-3. Run notebooks in order: `00` → `01` → `02` → `03`
+2. Open `config` and add your API keys
+3. Run notebooks in order: `config` → `bronze` → `silver` → `gold`
 4. Open the Databricks SQL Dashboard to view results
 5. Optionally enable the Databricks Job for daily scheduling
 
