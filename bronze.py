@@ -42,7 +42,7 @@ rows = [(json.dumps(listing), listing["id"]) for listing in raw_data]
 
 df_bronze = spark.createDataFrame(rows, ["raw_json", "listing_id"])
 
-# ddd ingestion metadata
+# ingestion metadata
 df_bronze = df_bronze \
     .withColumn("ingested_at", current_timestamp()) \
     .withColumn("source", lit("rentcast_api")) \
@@ -56,14 +56,3 @@ df_bronze.write \
     .saveAsTable("rental_pipeline.bronze_listings")
 
 print(f"Written {df_bronze.count()} records to bronze_listings")
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC SELECT 
-# MAGIC     listing_id,
-# MAGIC     ingested_at,
-# MAGIC     source,
-# MAGIC     raw_json
-# MAGIC FROM rental_pipeline.bronze_listings
-# MAGIC LIMIT 5
