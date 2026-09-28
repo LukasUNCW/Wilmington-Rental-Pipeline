@@ -1,6 +1,5 @@
 DATABASE_NAME = "rental_pipeline"
-RENTCAST_API_KEY = "your-rentcast-api-key-here"
-ANTHROPIC_API_KEY = "your-anthropic-api-key-here"
+ANTHROPIC_API_KEY = dbutils.secrets.get(scope="rental-pipeline", key="anthropic-api-key")  # see config
 spark.sql(f"USE {DATABASE_NAME}")
 print("Ready.")
 

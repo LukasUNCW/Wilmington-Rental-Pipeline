@@ -1,4 +1,7 @@
-RENTCAST_API_KEY = "your_rentcast_api_key_here"
+# API keys live in a Databricks secret scope, never in notebook source:
+#   databricks secrets create-scope rental-pipeline
+#   databricks secrets put-secret rental-pipeline rentcast-api-key
+#   databricks secrets put-secret rental-pipeline anthropic-api-key
 
 WILMINGTON_CITY = "Wilmington"
 WILMINGTON_STATE = "NC"
