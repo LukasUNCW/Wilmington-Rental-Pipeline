@@ -1,124 +1,115 @@
-# Wilmington Rental Pipeline 
+# Wilmington Rental Pipeline
 
-ETL pipeline built on Databricks that ingests live rental listings 
-from the RentCast API, transforms them through a medallion architecture, and uses the 
-Claude AI API to score and summarize each listing against our group's preferences, 
-helping three college students find the best house to rent in Wilmington, NC.
+![Databricks](https://img.shields.io/badge/Databricks-FF3621?logo=databricks&logoColor=white)
+![Delta Lake](https://img.shields.io/badge/Delta%20Lake-00ADD4?logo=delta&logoColor=white)
+![PySpark](https://img.shields.io/badge/PySpark-E25A1C?logo=apachespark&logoColor=white)
+![Claude](https://img.shields.io/badge/Claude%20API-D97757?logo=anthropic&logoColor=white)
 
----
-
-## Architecture
-
-Built on the **medallion architecture** pattern common in production data engineering 
-and mortgage/fintech data stacks.
+A daily Databricks pipeline that pulls live rental listings for Wilmington, NC, cleans them through a Bronze → Silver → Gold medallion architecture, and has **Claude score every listing against our group's preferences**. It was built to help three UNCW students find the best house to rent, without refreshing listing sites every morning.
 
 ```mermaid
 flowchart LR
-    A[RentCast API] -->|raw JSON| B[(Bronze\nDelta Table)]
-    B -->|parse + clean| C[(Silver\nDelta Table)]
-    C -->|Claude AI scoring| D[(Gold\nDelta Table)]
-    D -->|top listings| E[Databricks\nDashboard]
-    D -->|score = 9| F[Email Alert]
+    API["RentCast API<br/>50 live listings"] -->|raw JSON| B[("Bronze<br/>append-only")]
+    B -->|parse · dedupe · filter| S[("Silver<br/>typed + Maps links")]
+    S -->|Claude scores 1–10| G[("Gold<br/>scored listings")]
+    G -->|score ≥ 7| D["SQL dashboard"]
+    G -->|score = 9| E["Daily email alert"]
 
-    style A fill:#4A90D9,color:#fff
-    style B fill:#CD7F32,color:#fff
-    style C fill:#708090,color:#fff
-    style D fill:#DAA520,color:#fff
-    style E fill:#4CAF50,color:#fff
-    style F fill:#9C27B0,color:#fff
+    classDef src fill:#2a78d6,stroke:#2a78d6,color:#fff
+    classDef bronze fill:#a0622d,stroke:#a0622d,color:#fff
+    classDef silver fill:#6b7280,stroke:#6b7280,color:#fff
+    classDef gold fill:#b8860b,stroke:#b8860b,color:#fff
+    classDef out fill:#1baf7a,stroke:#1baf7a,color:#fff
+    class API src
+    class B bronze
+    class S silver
+    class G gold
+    class D,E out
 ```
 
----
+## Results
 
-## Tech Stack
+| | |
+|---|---|
+| Listings ingested and scored per run | **50** |
+| Scored 7/10 or higher | **23** |
+| Top pick | **3956 Echo Farms Blvd**: 3 bed / 3 bath, $1,749/month (**$583 per person**) |
+| Schedule | Pipeline runs daily at 7:30 AM ET, and alerts reach all three of us at 8:00 AM ET |
+
+## How it works
+
+| Layer | Notebook | What happens |
+|---|---|---|
+| **Bronze** | [`bronze.py`](bronze.py) | Calls the RentCast long-term rentals endpoint and lands each listing's raw JSON in a Delta table with ingestion time and source metadata. Append-only: history is never modified. |
+| **Silver** | [`silver.py`](silver.py) | Parses JSON against an explicit schema into typed columns, keeps the latest version of each listing (`row_number()` over `listing_id`), drops rows without a price or bedroom count, and adds a Google Maps link. |
+| **Gold** | [`gold.py`](gold.py) | Sends each listing plus our preferences to Claude (Haiku 4.5), parses the structured response and joins it back to Silver as the final table. |
+
+### Claude as the scoring layer
+
+Each listing goes to Claude together with a plain-English list of our requirements:
+
+- ≤ $1,000 per person (≤ $3,000/month for three)
+- ≥ 3 bedrooms and ≥ 2 bathrooms, ≥ 1,200 sq ft
+- Single-family or townhouse, within ~7 miles of UNCW
+- Dealbreakers: over $5,000/month or fewer than 2 bathrooms
+
+Claude has to answer in a fixed JSON contract, which lands directly as Gold columns:
+
+```json
+{
+  "score": "1–10 match against the preferences",
+  "per_person_rent": "monthly rent ÷ 3",
+  "pros": "2–3 key positives",
+  "cons": "2–3 key concerns",
+  "summary": "one-sentence recommendation"
+}
+```
+
+Using an LLM here replaces a brittle hand-tuned scoring formula. Soft preferences like "reasonable distance" and "townhouse preferred" get weighed together, and each score comes with an explanation a person can check.
+
+### Gold table: `rental_pipeline.gold_listings`
+
+| Column | Source |
+|---|---|
+| `listing_id`, `address`, `zip_code`, `county`, `latitude`, `longitude` | Silver |
+| `property_type`, `bedrooms`, `bathrooms`, `square_footage` | Silver |
+| `monthly_rent`, `status`, `days_on_market`, `listed_date` | Silver |
+| `maps_url` | Silver (derived) |
+| `score`, `per_person_rent`, `pros`, `cons`, `summary` | Claude |
+
+## Tech stack
 
 | Layer | Technology |
 |---|---|
-| Data Platform | Databricks (Serverless) |
+| Platform | Databricks (serverless) |
 | Storage | Delta Lake |
-| Transformation | PySpark + SQL |
-| AI Scoring | Anthropic Claude API (Haiku) |
-| Listings Data | RentCast API |
-| Orchestration | Databricks Jobs (daily schedule) |
-| Visualization | Databricks SQL Dashboard |
-
----
-
-## Pipeline Notebooks
-
-| Notebook | Description |
-|---|---|
-| `config` | Project configuration and database setup |
-| `bronze` | Calls RentCast API, lands raw JSON into Delta |
-| `silver` | Cleans, deduplicates, normalizes, adds Maps URLs |
-| `gold` | Batch scores listings via Claude API |
-
----
-
-## How It Works
-
-### Bronze Layer
-Raw JSON responses from the RentCast API are landed as-is into a Delta table with 
-an ingestion timestamp and source metadata. Append-only, nothing is ever modified 
-or deleted at this layer.
-
-### Silver Layer
-The raw JSON is parsed into typed columns (bedrooms, bathrooms, price, coordinates, 
-etc.), deduplicated by listing ID, and enriched with a Google Maps URL for each 
-property. Records with null prices or bedroom counts are filtered out.
-
-### Gold Layer
-Each cleaned listing is passed to the Claude API with a structured prompt containing our
-group's preferences (budget, bedroom count, property type, location). Claude 
-returns a 1–10 score, per-person rent estimate, pros, cons, and a one-sentence 
-summary for each listing. Results are joined back to the silver data and written 
-as the final analytical asset.
-
-### Dashboard
-A Databricks SQL Dashboard surfaces the top listings (score ≥ 7) with a sortable 
-table, monthly rent bar chart, and score distribution visualization.
-
----
-
-## Key Results
-
-- **50 listings** ingested and scored per run
-- **23 listings** scored 7/10 or above
-- **Top pick**: 3956 Echo Farms Blvd — 3bed/3bath for $1,749/month ($583/person)
-- Pipeline runs automatically every day at 7:30 AM EST
-- Email alerts sent daily to all three of us at 8:00 AM EST for any listing scoring 9/10
-
----
+| Transformation | PySpark |
+| AI scoring | Anthropic Claude API (Haiku 4.5) |
+| Listings data | RentCast API |
+| Orchestration and alerts | Databricks Jobs (daily schedule) |
+| Visualization | Databricks SQL dashboard |
 
 ## Setup
 
-### Prerequisites
-- Databricks account (Community Edition works)
-- RentCast API key — [sign up free](https://rentcast.io/api)
-- Anthropic API key — [sign up here](https://console.anthropic.com) (may require the purchasing of Anthropic credits)
+**Prerequisites:** a Databricks workspace, a [RentCast API key](https://rentcast.io/api) and an [Anthropic API key](https://console.anthropic.com).
 
-### Steps
-1. Clone this repo into your Databricks Workspace
-2. Open `config` and add your API keys
-3. Run notebooks in order: `config` → `bronze` → `silver` → `gold`
-4. Open the Databricks SQL Dashboard to view results
-5. (Optional) Enable the Databricks Job for daily scheduling
+1. Clone this repo into your workspace as a Git folder.
+2. Store both API keys in a secret scope. The notebooks read them with `dbutils.secrets.get`, so keys never appear in source:
+   ```bash
+   databricks secrets create-scope rental-pipeline
+   databricks secrets put-secret rental-pipeline rentcast-api-key
+   databricks secrets put-secret rental-pipeline anthropic-api-key
+   ```
+3. Run the notebooks in order: `config` → `bronze` → `silver` → `gold`.
+4. Optionally, schedule the four notebooks as a Databricks Job and build the dashboard and alert on `gold_listings`. The dashboard and email alert are configured in the Databricks UI, not in this repo.
 
----
+## Skills demonstrated
 
-## Skills Demonstrated
-
-- Medallion architecture (Bronze / Silver / Gold)
-- Delta Lake table management and schema evolution
-- PySpark transformations and window functions
-- REST API integration (RentCast + Anthropic)
-- Agentic AI workflows — LLM as a scoring/reasoning layer in a data pipeline
-- Databricks Jobs orchestration
-- SQL Dashboard design
+- Medallion architecture on Delta Lake: append-only raw layer, deduplicated typed layer, analytical layer
+- PySpark schema enforcement, JSON parsing and window functions
+- REST API ingestion (RentCast) and an LLM as a structured reasoning step inside a data pipeline (Claude)
+- Job orchestration, alerting and dashboarding on Databricks
 
 ---
 
-## Author
-
-Lukas Nilsson — UNCW  
-Built as a portfolio project for data engineering and AI integration roles
+Built by Lukas Nilsson (UNCW) as a portfolio project for data engineering and AI integration roles.

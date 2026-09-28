@@ -1,6 +1,6 @@
 # Databricks notebook source
 # Run config first to load variables
-RENTCAST_API_KEY = "9a677050ebd4471aac1271d3ccf5ad38"  # same key from 00_config
+RENTCAST_API_KEY = dbutils.secrets.get(scope="rental-pipeline", key="rentcast-api-key")  # see config
 DATABASE_NAME = "rental_pipeline"
 spark.sql(f"USE {DATABASE_NAME}")
 
